@@ -1,0 +1,48 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="100" cy="100" r="90" fill="#1a1a1a" stroke="#00d4aa" stroke-width="4"/>
+  
+  <!-- Browser window -->
+  <rect x="30" y="50" width="50" height="35" rx="4" fill="#2d3748" stroke="#4a5568" stroke-width="2"/>
+  <!-- Browser dots -->
+  <circle cx="38" cy="58" r="2" fill="#ff5f57"/>
+  <circle cx="46" cy="58" r="2" fill="#ffbd2e"/>
+  <circle cx="54" cy="58" r="2" fill="#28ca42"/>
+  <!-- Browser content -->
+  <rect x="35" y="65" width="40" height="2" rx="1" fill="#00d4aa"/>
+  <rect x="35" y="70" width="25" height="2" rx="1" fill="#4a5568"/>
+  <rect x="35" y="75" width="30" height="2" rx="1" fill="#4a5568"/>
+  
+  <!-- Arrow/Link -->
+  <path d="M85 67 L115 67" stroke="#00d4aa" stroke-width="3" fill="none" marker-end="url(#arrowhead)"/>
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#00d4aa"/>
+    </marker>
+  </defs>
+  
+  <!-- Terminal window -->
+  <rect x="120" y="50" width="50" height="35" rx="4" fill="#0d1117" stroke="#30363d" stroke-width="2"/>
+  <!-- Terminal header -->
+  <rect x="120" y="50" width="50" height="8" rx="4" fill="#21262d"/>
+  <circle cx="128" cy="54" r="1.5" fill="#ff5f57"/>
+  <circle cx="133" cy="54" r="1.5" fill="#ffbd2e"/>
+  <circle cx="138" cy="54" r="1.5" fill="#28ca42"/>
+  <!-- Terminal content -->
+  <text x="125" y="68" font-family="Monaco, monospace" font-size="8" fill="#58a6ff">$</text>
+  <text x="130" y="68" font-family="Monaco, monospace" font-size="8" fill="#f0f6fc">ssh</text>
+  <rect x="125" y="72" width="2" height="8" fill="#58a6ff" opacity="0.8">
+    <animate attributeName="opacity" values="0.8;0.2;0.8" dur="1.5s" repeatCount="indefinite"/>
+  </rect>
+  
+  <!-- sshlink text -->
+  <text x="100" y="135" text-anchor="middle" font-family="Monaco, 'Courier New', monospace" font-size="28" font-weight="bold">
+    <tspan fill="#00d4aa">ssh</tspan><tspan fill="#58a6ff">link</tspan>
+  </text>
+  
+  <!-- Decorative connection dots -->
+  <circle cx="50" cy="40" r="3" fill="#00d4aa" opacity="0.6"/>
+  <circle cx="150" cy="40" r="3" fill="#58a6ff" opacity="0.6"/>
+  <circle cx="50" cy="160" r="3" fill="#58a6ff" opacity="0.6"/>
+  <circle cx="150" cy="160" r="3" fill="#00d4aa" opacity="0.6"/>
+</svg>
