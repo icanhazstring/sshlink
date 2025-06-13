@@ -113,18 +113,18 @@ func handleURL(urlString, terminalType string) error {
 		return fmt.Errorf("unsupported scheme: %s", u.Scheme)
 	}
 
-	// Parse command from URL: sshlink://host
-	host := u.Host
-	if host == "" {
-		return fmt.Errorf("no host specified")
+	if u.Host == "" {
+		return fmt.Errorf("no target specified")
 	}
 
-	fmt.Printf("🚀 Opening SSH connection to: %s\n", host)
-	return executeSSH(host, terminalType)
+	target := strings.Replace(urlString, "sshlink://", "", 1)
+
+	fmt.Printf("🚀 Opening SSH connection to: %s\n", target)
+	return executeSSH("ssh "+target, terminalType)
 }
 
 func executeSSH(host, terminalType string) error {
-	terminal, err := terminals.CreateTerminal(terminalType)
+	terminal, err := terminals.CreateTerminalForTest(terminalType)
 	if err != nil {
 		return err
 	}
