@@ -120,7 +120,7 @@ func handleURL(urlString, terminalType string) error {
 	target := strings.Replace(urlString, "sshlink://", "", 1)
 
 	fmt.Printf("🚀 Opening SSH connection to: %s\n", target)
-	return executeSSH("ssh "+target, terminalType)
+	return executeSSH(target, terminalType)
 }
 
 func executeSSH(host, terminalType string) error {

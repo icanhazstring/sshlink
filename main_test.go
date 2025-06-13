@@ -27,29 +27,29 @@ func (m *MockTerminal) IsAvailable() bool {
 
 func TestSSHLinkExecution(t *testing.T) {
 	tests := []struct {
-		name            string
-		url             string
-		expectedCommand string
+		name         string
+		url          string
+		expectedHost string
 	}{
 		{
-			name:            "Simple host",
-			url:             "sshlink://example.com",
-			expectedCommand: "ssh example.com",
+			name:         "Simple host",
+			url:          "sshlink://example.com",
+			expectedHost: "example.com",
 		},
 		{
-			name:            "User and host",
-			url:             "sshlink://user@example.com",
-			expectedCommand: "ssh user@example.com",
+			name:         "User and host",
+			url:          "sshlink://user@example.com",
+			expectedHost: "user@example.com",
 		},
 		{
-			name:            "User, host and port",
-			url:             "sshlink://user@example.com:2222",
-			expectedCommand: "ssh user@example.com:2222",
+			name:         "User, host and port",
+			url:          "sshlink://user@example.com:2222",
+			expectedHost: "user@example.com:2222",
 		},
 		{
-			name:            "IPv6 address",
-			url:             "sshlink://user@[2001:db8::1]:22",
-			expectedCommand: "ssh user@[2001:db8::1]:22",
+			name:         "IPv6 address",
+			url:          "sshlink://user@[2001:db8::1]:22",
+			expectedHost: "user@[2001:db8::1]:22",
 		},
 	}
 
@@ -73,9 +73,9 @@ func TestSSHLinkExecution(t *testing.T) {
 			}
 
 			// Verify the mock captured the correct SSH command
-			if mock.capturedCommand != tt.expectedCommand {
+			if mock.capturedCommand != tt.expectedHost {
 				t.Errorf("Expected SSH command '%s', but terminal.Open() received '%s'",
-					tt.expectedCommand, mock.capturedCommand)
+					tt.expectedHost, mock.capturedCommand)
 			}
 
 			t.Logf("✅ sshlink correctly passed '%s' to terminal.Open()", mock.capturedCommand)
