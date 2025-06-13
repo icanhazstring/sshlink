@@ -140,7 +140,7 @@ Create a custom `config.json` for specialized setups:
 ./sshlink -install -config=./config.json
 ```
 
-## 🛠️ Configuration
+## 🔧 Configuration
 
 ### Supported Terminals
 
