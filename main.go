@@ -6,9 +6,10 @@ import (
 	"log"
 	"net/url"
 	"os"
-	"os/exec"
 	"runtime"
 	"strings"
+
+	"github.com/icanhazstring/sshlink/terminals"
 )
 
 const version = "1.0.0"
@@ -123,121 +124,54 @@ func handleURL(urlString, terminalType string) error {
 }
 
 func executeSSH(host, terminalType string) error {
-	switch runtime.GOOS {
-	case "darwin":
-		return executeSSHMacOS(host, terminalType)
-	case "linux":
-		return executeSSHLinux(host, terminalType)
-	case "windows":
-		return executeSSHWindows(host, terminalType)
-	default:
-		return fmt.Errorf("unsupported operating system: %s", runtime.GOOS)
+	terminal, err := terminals.CreateTerminal(terminalType)
+	if err != nil {
+		return err
 	}
-}
 
-func executeSSHMacOS(host, terminalType string) error {
-	switch strings.ToLower(terminalType) {
-	case "terminal":
-		script := fmt.Sprintf(`tell application "Terminal"
-	activate
-	do script "ssh %s"
-end tell`, host)
-		cmd := exec.Command("osascript", "-e", script)
-		return cmd.Run()
-
-	case "iterm":
-		script := fmt.Sprintf(`tell application "iTerm"
-	activate
-	create window with default profile
-	tell current session of current window
-		write text "ssh %s"
-	end tell
-end tell`, host)
-		cmd := exec.Command("osascript", "-e", script)
-		return cmd.Run()
-
-	case "warp":
-		// Warp doesn't have good AppleScript automation, so we'll copy the command
-		// to clipboard and open Warp - user can just paste with Cmd+V
-		sshCommand := fmt.Sprintf("ssh %s", host)
-
-		// Copy SSH command to clipboard
-		cmd := exec.Command("pbcopy")
-		cmd.Stdin = strings.NewReader(sshCommand)
-		if err := cmd.Run(); err != nil {
-			fmt.Printf("⚠️  Could not copy to clipboard: %v\n", err)
-		} else {
-			fmt.Printf("📋 Copied to clipboard: %s\n", sshCommand)
-			fmt.Println("💡 Paste with Cmd+V in Warp terminal")
-		}
-
-		// Open Warp
-		cmd = exec.Command("open", "-a", "Warp")
-		return cmd.Run()
-
-	default:
-		// For other terminals, try direct execution
-		args, exists := supportedTerminals[terminalType]
-		if !exists {
-			return fmt.Errorf("unsupported terminal: %s", terminalType)
-		}
-		args = append(args, "ssh", host)
-		cmd := exec.Command(terminalType, args...)
-		return cmd.Start()
-	}
-}
-
-func executeSSHLinux(host, terminalType string) error {
-	args, exists := supportedTerminals[terminalType]
-	if !exists {
-		return fmt.Errorf("unsupported terminal: %s", terminalType)
-	}
-	args = append(args, "ssh", host)
-	cmd := exec.Command(terminalType, args...)
-	return cmd.Start()
-}
-
-func executeSSHWindows(host, terminalType string) error {
-	// Basic Windows support - opens in cmd
-	cmd := exec.Command("cmd", "/c", "start", "cmd", "/k", fmt.Sprintf("ssh %s", host))
-	return cmd.Start()
+	fmt.Printf("🚀 Opening SSH connection to: %s using %s\n", host, terminal.Name())
+	return terminal.Open(host)
 }
 
 func installHandler(terminalType string) error {
 	fmt.Printf("Installing sshlink handler for %s on %s...\n", terminalType, runtime.GOOS)
 
+	// Validate terminal type by trying to create it
+	terminal, err := terminals.CreateTerminal(terminalType)
+	if err != nil {
+		return err
+	}
+
 	switch runtime.GOOS {
 	case "darwin":
-		return installHandlerMacOS(terminalType)
+		return installHandlerMacOS(terminal.Name())
 	case "linux":
-		return installHandlerLinux(terminalType)
+		return installHandlerLinux(terminal.Name())
 	case "windows":
-		return installHandlerWindows(terminalType)
+		return installHandlerWindows(terminal.Name())
 	default:
 		return fmt.Errorf("installation not supported on %s", runtime.GOOS)
 	}
 }
 
-func installHandlerMacOS(terminalType string) error {
-	// This is a simplified version - in a real implementation,
-	// you'd create the full .app bundle structure
+func installHandlerMacOS(terminalName string) error {
 	fmt.Println("ℹ️  MacOS installation requires creating an app bundle.")
 	fmt.Println("   This minimal version shows the concept.")
-	fmt.Printf("   Would install handler for: %s\n", terminalType)
+	fmt.Printf("   Would install handler for: %s\n", terminalName)
 	return nil
 }
 
-func installHandlerLinux(terminalType string) error {
+func installHandlerLinux(terminalName string) error {
 	fmt.Println("ℹ️  Linux installation requires creating .desktop files.")
 	fmt.Println("   This minimal version shows the concept.")
-	fmt.Printf("   Would install handler for: %s\n", terminalType)
+	fmt.Printf("   Would install handler for: %s\n", terminalName)
 	return nil
 }
 
-func installHandlerWindows(terminalType string) error {
+func installHandlerWindows(terminalName string) error {
 	fmt.Println("ℹ️  Windows installation requires registry modifications.")
 	fmt.Println("   This minimal version shows the concept.")
-	fmt.Printf("   Would install handler for: %s\n", terminalType)
+	fmt.Printf("   Would install handler for: %s\n", terminalName)
 	return nil
 }
 

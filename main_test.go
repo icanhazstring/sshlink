@@ -1,11 +1,183 @@
 package main
 
 import (
+	"fmt"
 	"net/url"
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/icanhazstring/sshlink/terminals"
 )
+
+// Mock terminal for testing
+type MockTerminal struct {
+	name      string
+	openCalls []string
+	shouldErr bool
+}
+
+func (m *MockTerminal) Open(host string) error {
+	m.openCalls = append(m.openCalls, host)
+	if m.shouldErr {
+		return fmt.Errorf("mock error")
+	}
+	return nil
+}
+
+func (m *MockTerminal) Name() string {
+	return m.name
+}
+
+func (m *MockTerminal) IsAvailable() bool {
+	return true
+}
+
+func TestTerminalInterface(t *testing.T) {
+	tests := []struct {
+		name         string
+		terminalType string
+		expectError  bool
+	}{
+		{
+			name:         "Valid terminal type",
+			terminalType: "terminal",
+			expectError:  false,
+		},
+		{
+			name:         "Valid iTerm",
+			terminalType: "iterm",
+			expectError:  false,
+		},
+		{
+			name:         "Valid Warp",
+			terminalType: "warp",
+			expectError:  false,
+		},
+		{
+			name:         "Invalid terminal type",
+			terminalType: "nonexistent",
+			expectError:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			terminal, err := terminals.CreateTerminal(tt.terminalType)
+
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("Expected error but got none")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
+				return
+			}
+
+			if terminal == nil {
+				t.Errorf("Expected terminal but got nil")
+				return
+			}
+
+			// Test that we can call methods on the terminal
+			name := terminal.Name()
+			if name == "" {
+				t.Errorf("Terminal name should not be empty")
+			}
+
+			// Test IsAvailable (may return false if terminal not installed, that's OK)
+			_ = terminal.IsAvailable()
+		})
+	}
+}
+
+func TestMockTerminal(t *testing.T) {
+	mock := &MockTerminal{name: "mock", shouldErr: false}
+
+	// Test successful open
+	err := mock.Open("test-host")
+	if err != nil {
+		t.Errorf("Expected no error, got: %v", err)
+	}
+
+	if len(mock.openCalls) != 1 || mock.openCalls[0] != "test-host" {
+		t.Errorf("Expected 1 call with 'test-host', got: %v", mock.openCalls)
+	}
+
+	// Test error case
+	mock.shouldErr = true
+	err = mock.Open("another-host")
+	if err == nil {
+		t.Errorf("Expected error but got none")
+	}
+}
+
+func TestSpecificTerminals(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skip("Skipping macOS terminal tests on non-macOS platform")
+	}
+
+	tests := []struct {
+		name         string
+		terminalType string
+		constructor  func() terminals.Terminal
+	}{
+		{
+			name:         "macOS Terminal",
+			terminalType: "terminal",
+			constructor:  terminals.NewMacOSTerminal,
+		},
+		{
+			name:         "iTerm",
+			terminalType: "iterm",
+			constructor:  terminals.NewITerm,
+		},
+		{
+			name:         "Warp",
+			terminalType: "warp",
+			constructor:  terminals.NewWarp,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			terminal := tt.constructor()
+
+			if terminal.Name() == "" {
+				t.Errorf("Terminal name should not be empty")
+			}
+
+			// Test that Open doesn't panic (it will likely fail due to test environment)
+			defer func() {
+				if r := recover(); r != nil {
+					t.Errorf("Terminal.Open() panicked: %v", r)
+				}
+			}()
+
+			_ = terminal.Open("test-host")
+		})
+	}
+}
+
+func TestGenericTerminal(t *testing.T) {
+	terminal := terminals.NewGenericTerminal("test-terminal", []string{"-e"})
+
+	if terminal.Name() != "test-terminal" {
+		t.Errorf("Expected name 'test-terminal', got '%s'", terminal.Name())
+	}
+
+	// Test that Open doesn't panic
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("GenericTerminal.Open() panicked: %v", r)
+		}
+	}()
+
+	_ = terminal.Open("test-host")
+}
 
 func TestHandleURL(t *testing.T) {
 	tests := []struct {
