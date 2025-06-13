@@ -9,7 +9,7 @@
   [![Cross-Platform](https://img.shields.io/badge/Cross--Platform-4CAF50?style=for-the-badge)](https://github.com/icanhazstring/sshlink)
   [![MIT License](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
   
-  [Installation](#installation) • [Usage](#usage) • [Configuration](#configuration) • [Contributing](#contributing)
+  [Installation](#-installation) • [Usage](#-usage) • [Configuration](#-configuration) • [Contributing](#-contributing)
 </div>
 
 ---
