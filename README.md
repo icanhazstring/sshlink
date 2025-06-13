@@ -34,7 +34,7 @@ As developers, we constantly switch between web dashboards, monitoring tools, an
 IP: 192.168.1.100
 
 <!-- After: One-click magic -->
-<a href="sshlink://ssh+192.168.1.100">192.168.1.100</a>
+<a href="sshlink://192.168.1.100">192.168.1.100</a>
 ```
 
 **Click the link → SSH session opens instantly!**
@@ -98,9 +98,9 @@ brew install icanhazstring/tap/sshlink
 Once installed, use `sshlink://` links in any web page:
 
 ```html
-<a href="sshlink://ssh+127.0.0.1">Connect to localhost</a>
-<a href="sshlink://ssh+user@example.com">Connect with username</a>
-<a href="sshlink://ssh+user@example.com:2222">Custom port</a>
+<a href="sshlink://127.0.0.1">Connect to localhost</a>
+<a href="sshlink://user@example.com">Connect with username</a>
+<a href="sshlink://user@example.com:2222">Custom port</a>
 ```
 
 ### For Web Developers
@@ -111,7 +111,7 @@ Add sshlink support to your dashboards, monitoring tools, or documentation:
 // Transform IPs into clickable SSH links
 function makeSSHLink(ip, user = '') {
   const target = user ? `${user}@${ip}` : ip;
-  return `<a href="sshlink://ssh+${target}">${ip}</a>`;
+  return `<a href="sshlink://${target}">${ip}</a>`;
 }
 
 // Example: Server monitoring dashboard
@@ -166,19 +166,19 @@ Create a custom `config.json` for specialized setups:
 
 ### Kubernetes Dashboard
 ```html
-<a href="sshlink://ssh+kubectl-node-1">kubectl-node-1</a>
-<a href="sshlink://ssh+root@kubectl-node-2">kubectl-node-2</a>
+<a href="sshlink://kubectl-node-1">kubectl-node-1</a>
+<a href="sshlink://root@kubectl-node-2">kubectl-node-2</a>
 ```
 
 ### Docker Swarm Manager
 ```html
-<a href="sshlink://ssh+swarm-manager">Connect to Swarm Manager</a>
+<a href="sshlink://swarm-manager">Connect to Swarm Manager</a>
 ```
 
 ### Development Servers
 ```html
-<a href="sshlink://ssh+dev@staging.company.com">Staging Server</a>
-<a href="sshlink://ssh+deploy@prod.company.com:2222">Production</a>
+<a href="sshlink://dev@staging.company.com">Staging Server</a>
+<a href="sshlink://deploy@prod.company.com:2222">Production</a>
 ```
 
 ## 🗑️ Uninstall

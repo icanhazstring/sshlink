@@ -35,14 +35,14 @@ func main() {
 		fmt.Fprintf(os.Stderr, "sshlink v%s - One-click SSH connections from your browser\n\n", version)
 		fmt.Fprintf(os.Stderr, "Usage:\n")
 		fmt.Fprintf(os.Stderr, "  %s [options]\n", os.Args[0])
-		fmt.Fprintf(os.Stderr, "  %s sshlink://ssh+host\n\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "  %s sshlink://host\n\n", os.Args[0])
 		fmt.Fprintf(os.Stderr, "Options:\n")
 		flag.PrintDefaults()
 		fmt.Fprintf(os.Stderr, "\nExamples:\n")
 		fmt.Fprintf(os.Stderr, "  %s -install                    # Install with default terminal\n", os.Args[0])
 		fmt.Fprintf(os.Stderr, "  %s -install -terminal=iterm    # Install with iTerm\n", os.Args[0])
 		fmt.Fprintf(os.Stderr, "  %s -list                       # List supported terminals\n", os.Args[0])
-		fmt.Fprintf(os.Stderr, "  %s sshlink://ssh+192.168.1.1  # Handle SSH URL\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "  %s sshlink://192.168.1.1  # Handle SSH URL\n", os.Args[0])
 	}
 
 	flag.Parse()
@@ -65,7 +65,7 @@ func main() {
 			log.Fatalf("Failed to install handler: %v", err)
 		}
 		fmt.Printf("✅ Handler installed successfully for %s!\n", *terminal)
-		fmt.Println("You can now use sshlink://ssh+host links in your browser.")
+		fmt.Println("You can now use sshlink://host links in your browser.")
 		return
 	}
 
@@ -112,13 +112,8 @@ func handleURL(urlString, terminalType string) error {
 		return fmt.Errorf("unsupported scheme: %s", u.Scheme)
 	}
 
-	// Parse command from URL: sshlink://ssh+host
-	command := u.Host
-	if !strings.HasPrefix(command, "ssh+") {
-		return fmt.Errorf("unsupported command format: %s", command)
-	}
-
-	host := strings.TrimPrefix(command, "ssh+")
+	// Parse command from URL: sshlink://host
+	host := u.Host
 	if host == "" {
 		return fmt.Errorf("no host specified")
 	}
