@@ -6,8 +6,15 @@ import (
 	"strings"
 )
 
+// TestCreateTerminal allows tests to override terminal creation
+var TestCreateTerminal func(terminalType string) (Terminal, error)
+
 // CreateTerminal factory function
 func CreateTerminal(terminalType string) (Terminal, error) {
+	if TestCreateTerminal != nil {
+		return TestCreateTerminal(terminalType)
+	}
+
 	switch runtime.GOOS {
 	case "darwin":
 		return createMacOSTerminal(terminalType)
