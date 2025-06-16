@@ -56,16 +56,16 @@ Download the latest binary for your platform from [Releases](https://github.com/
 
 ```bash
 # macOS (Intel)
-curl -L https://github.com/icanhazstring/sshlink/releases/latest/download/sshlink-darwin-amd64 -o sshlink
-chmod +x sshlink
+curl -L https://github.com/icanhazstring/sshlink/releases/latest/download/sshlink-darwin-amd64.tar.gz | tar -xz
+chmod +x sshlink-darwin-amd64
 
 # macOS (Apple Silicon)
-curl -L https://github.com/icanhazstring/sshlink/releases/latest/download/sshlink-darwin-arm64 -o sshlink
-chmod +x sshlink
+curl -L https://github.com/icanhazstring/sshlink/releases/latest/download/sshlink-darwin-arm64.tar.gz | tar -xz
+chmod +x sshlink-darwin-arm64
 
 # Linux (coming soon)
-curl -L https://github.com/icanhazstring/sshlink/releases/latest/download/sshlink-linux-amd64 -o sshlink
-chmod +x sshlink
+curl -L https://github.com/icanhazstring/sshlink/releases/latest/download/sshlink-linux-amd64.tar.gz | tar -xz
+chmod +x sshlink-linux-amd64
 
 # Windows (coming soon)
 # Download sshlink-windows-amd64.exe from releases
