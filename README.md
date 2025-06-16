@@ -41,7 +41,7 @@ IP: 192.168.1.100
 
 ## 🚀 Features
 
-- **🌍 Cross-Platform** - Works on macOS, Linux, and Windows
+- **🌍 Cross-Platform** - Works on macOS, (Linux, and Windows - coming soon)
 - **🔧 Multiple Terminals** - Supports Terminal, iTerm, Kitty, Alacritty, WezTerm
 - **⚡ Zero Configuration** - Works out of the box
 - **🎨 Customizable** - JSON config for advanced setups
@@ -63,11 +63,11 @@ chmod +x sshlink
 curl -L https://github.com/icanhazstring/sshlink/releases/latest/download/sshlink-darwin-arm64 -o sshlink
 chmod +x sshlink
 
-# Linux
+# Linux (coming soon)
 curl -L https://github.com/icanhazstring/sshlink/releases/latest/download/sshlink-linux-amd64 -o sshlink
 chmod +x sshlink
 
-# Windows
+# Windows (coming soon)
 # Download sshlink-windows-amd64.exe from releases
 ```
 
@@ -84,7 +84,7 @@ chmod +x sshlink
 ./sshlink -list
 ```
 
-### Package Managers
+### Package Managers (coming soon)
 
 ```bash
 # Homebrew (macOS/Linux)
