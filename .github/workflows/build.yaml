@@ -40,30 +40,63 @@ jobs:
           # Create tar.gz for Unix platforms
           tar -czf sshlink-darwin-amd64.tar.gz sshlink-darwin-amd64
           tar -czf sshlink-darwin-arm64.tar.gz sshlink-darwin-arm64
-          #tar -czf sshlink-linux-amd64.tar.gz sshlink-linux-amd64
-          #tar -czf sshlink-linux-arm64.tar.gz sshlink-linux-arm64
+          tar -czf sshlink-linux-amd64.tar.gz sshlink-linux-amd64
+          tar -czf sshlink-linux-arm64.tar.gz sshlink-linux-arm64
           # Create zip for Windows
-          #zip sshlink-windows-amd64.zip sshlink-windows-amd64.exe
+          zip sshlink-windows-amd64.zip sshlink-windows-amd64.exe
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: sshlink-binaries
-          path: build/sshlink-*
+      - name: Get release
+        id: get_release
+        uses: bruceadams/get-release@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
 
-  release:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
+#      - name: Upload Linux AMD64 asset
+#        uses: actions/upload-release-asset@v1
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#        with:
+#          upload_url: ${{ steps.get_release.outputs.upload_url }}
+#          asset_path: build/sshlink-linux-amd64.tar.gz
+#          asset_name: sshlink-linux-amd64.tar.gz
+#          asset_content_type: application/gzip
 
-      - name: Upload artifacts to existing release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: artifacts/sshlink-binaries/sshlink-*
-          tag_name: ${{ github.ref_name }}
+#      - name: Upload Linux ARM64 asset
+#        uses: actions/upload-release-asset@v1
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#        with:
+#          upload_url: ${{ steps.get_release.outputs.upload_url }}
+#          asset_path: build/sshlink-linux-arm64.tar.gz
+#          asset_name: sshlink-linux-arm64.tar.gz
+#          asset_content_type: application/gzip
+
+      - name: Upload macOS AMD64 asset
+        uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.get_release.outputs.upload_url }}
+          asset_path: build/sshlink-darwin-amd64.tar.gz
+          asset_name: sshlink-darwin-amd64.tar.gz
+          asset_content_type: application/gzip
+
+      - name: Upload macOS ARM64 asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.get_release.outputs.upload_url }}
+          asset_path: build/sshlink-darwin-arm64.tar.gz
+          asset_name: sshlink-darwin-arm64.tar.gz
+          asset_content_type: application/gzip
+
+#      - name: Upload Windows AMD64 asset
+#        uses: actions/upload-release-asset@v1
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#        with:
+#          upload_url: ${{ steps.get_release.outputs.upload_url }}
+#          asset_path: build/sshlink-windows-amd64.zip
+#          asset_name: sshlink-windows-amd64.zip
+#          asset_content_type: application/zip
