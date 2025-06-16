@@ -33,6 +33,8 @@ func createMacOSTerminal(terminalType string) (Terminal, error) {
 		return NewMacOSTerminal(), nil
 	case "iterm":
 		return NewITerm(), nil
+	case "iterm2":
+		return NewITerm2(), nil
 	case "warp":
 		return NewWarp(), nil
 	case "kitty":

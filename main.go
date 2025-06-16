@@ -22,6 +22,7 @@ var version = "dev"
 var supportedTerminals = map[string][]string{
 	"terminal":  {"-e"},
 	"iterm":     {},
+	"iterm2":    {},
 	"kitty":     {"-e"},
 	"alacritty": {"-e"},
 	"wezterm":   {"start"},
