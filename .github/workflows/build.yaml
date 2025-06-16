@@ -45,18 +45,12 @@ jobs:
           # Create zip for Windows
 #          zip sshlink-windows-amd64.zip sshlink-windows-amd64.exe
 
-      - name: Get release
-        id: get_release
-        uses: bruceadams/get-release@v1.3.2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
 #      - name: Upload Linux AMD64 asset
 #        uses: actions/upload-release-asset@v1
 #        env:
 #          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 #        with:
-#          upload_url: ${{ steps.get_release.outputs.upload_url }}
+#          upload_url: ${{ github.event.release.upload_url }}
 #          asset_path: build/sshlink-linux-amd64.tar.gz
 #          asset_name: sshlink-linux-amd64.tar.gz
 #          asset_content_type: application/gzip
@@ -66,7 +60,7 @@ jobs:
 #        env:
 #          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 #        with:
-#          upload_url: ${{ steps.get_release.outputs.upload_url }}
+#          upload_url: ${{ github.event.release.upload_url }}
 #          asset_path: build/sshlink-linux-arm64.tar.gz
 #          asset_name: sshlink-linux-arm64.tar.gz
 #          asset_content_type: application/gzip
@@ -76,7 +70,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.get_release.outputs.upload_url }}
+          upload_url: ${{ github.event.release.upload_url }}
           asset_path: build/sshlink-darwin-amd64.tar.gz
           asset_name: sshlink-darwin-amd64.tar.gz
           asset_content_type: application/gzip
@@ -86,7 +80,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.get_release.outputs.upload_url }}
+          upload_url: ${{ github.event.release.upload_url }}
           asset_path: build/sshlink-darwin-arm64.tar.gz
           asset_name: sshlink-darwin-arm64.tar.gz
           asset_content_type: application/gzip
@@ -96,7 +90,7 @@ jobs:
 #        env:
 #          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 #        with:
-#          upload_url: ${{ steps.get_release.outputs.upload_url }}
+#          upload_url: ${{ github.event.release.upload_url }}
 #          asset_path: build/sshlink-windows-amd64.zip
 #          asset_name: sshlink-windows-amd64.zip
 #          asset_content_type: application/zip
