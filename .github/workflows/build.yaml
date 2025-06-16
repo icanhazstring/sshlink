@@ -49,7 +49,7 @@ jobs:
         id: get_release
         uses: bruceadams/get-release@v1.3.2
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 #      - name: Upload Linux AMD64 asset
 #        uses: actions/upload-release-asset@v1
