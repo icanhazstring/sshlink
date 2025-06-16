@@ -1,6 +1,7 @@
 package main
 
 import (
+	"embed"
 	"flag"
 	"fmt"
 	"log"
@@ -12,6 +13,9 @@ import (
 
 	"github.com/icanhazstring/sshlink/terminals"
 )
+
+//go:embed wrapper/sshlink_handler.m
+var objcWrapperFS embed.FS
 
 const version = "1.0.0"
 
@@ -255,95 +259,14 @@ func installHandlerMacOS(terminalName string) error {
 		return fmt.Errorf("failed to make executable: %v", err)
 	}
 
-	// Create minimal Objective-C URL handler wrapper
+	// Read Objective-C wrapper source from embedded file
+	objcSource, err := getObjectiveCWrapper()
+	if err != nil {
+		return fmt.Errorf("failed to get Objective-C wrapper source: %v", err)
+	}
+
+	// Write Objective-C source to temporary file
 	objcSourcePath := fmt.Sprintf("%s/SSHLinkHandler.m", resourcesPath)
-	objcSource := `#import <Foundation/Foundation.h>
-#import <AppKit/AppKit.h>
-
-@interface SSHLinkHandler : NSObject <NSApplicationDelegate>
-- (void)handleGetURLEvent:(NSAppleEventDescriptor *)event 
-           withReplyEvent:(NSAppleEventDescriptor *)replyEvent;
-@end
-
-@implementation SSHLinkHandler
-
-- (void)applicationDidFinishLaunching:(NSNotification *)notification {
-    // Register for GetURL Apple Events
-    NSAppleEventManager *appleEventManager = [NSAppleEventManager sharedAppleEventManager];
-    [appleEventManager setEventHandler:self 
-                           andSelector:@selector(handleGetURLEvent:withReplyEvent:) 
-                         forEventClass:kInternetEventClass 
-                            andEventID:kAEGetURL];
-}
-
-- (void)handleGetURLEvent:(NSAppleEventDescriptor *)event 
-           withReplyEvent:(NSAppleEventDescriptor *)replyEvent {
-    
-    // Extract URL from Apple Event
-    NSAppleEventDescriptor *directObjectDescriptor = [event paramDescriptorForKeyword:keyDirectObject];
-    NSString *urlString = [directObjectDescriptor stringValue];
-    
-    // Get path to our Go executable
-    NSBundle *mainBundle = [NSBundle mainBundle];
-    NSString *goExecPath = [[mainBundle bundlePath] 
-                           stringByAppendingPathComponent:@"Contents/MacOS/SSHLink-real"];
-    
-    // Launch Go application with URL
-    NSTask *task = [[NSTask alloc] init];
-    task.launchPath = goExecPath;
-    task.arguments = @[urlString];
-    
-    [task launch];
-    
-    // Don't terminate - just stay alive and ready for next URL
-    // This fixes the "every second click" issue
-}
-
-- (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)sender {
-    // Don't terminate when windows close - we're a background URL handler
-    return NO;
-}
-
-- (void)applicationWillTerminate:(NSNotification *)notification {
-    // Clean shutdown
-}
-
-@end
-
-int main(int argc, const char * argv[]) {
-    @autoreleasepool {
-        // If we have command line arguments, pass them directly to Go executable
-        if (argc > 1) {
-            NSString *goExecPath = [[NSBundle mainBundle].bundlePath 
-                                   stringByAppendingPathComponent:@"Contents/MacOS/SSHLink-real"];
-            
-            NSMutableArray *args = [NSMutableArray array];
-            for (int i = 1; i < argc; i++) {
-                [args addObject:[NSString stringWithUTF8String:argv[i]]];
-            }
-            
-            NSTask *task = [[NSTask alloc] init];
-            task.launchPath = goExecPath;
-            task.arguments = args;
-            
-            [task launch];
-            [task waitUntilExit];
-            return task.terminationStatus;
-        }
-        
-        // No arguments - this is a URL handler launch
-        // Stay alive as a background service for handling URLs
-        NSApplication *app = [NSApplication sharedApplication];
-        SSHLinkHandler *handler = [[SSHLinkHandler alloc] init];
-        app.delegate = handler;
-        
-        // Run the app - it will stay alive and handle multiple URLs
-        [app run];
-    }
-    return 0;
-}
-`
-
 	if err := os.WriteFile(objcSourcePath, []byte(objcSource), 0644); err != nil {
 		return fmt.Errorf("failed to create Objective-C source: %v", err)
 	}
@@ -529,4 +452,12 @@ func uninstallHandlerMacOS() error {
 
 	fmt.Println("✅ SSHLink uninstalled successfully!")
 	return nil
+}
+
+func getObjectiveCWrapper() (string, error) {
+	content, err := objcWrapperFS.ReadFile("wrapper/sshlink_handler.m")
+	if err != nil {
+		return "", fmt.Errorf("failed to read embedded Objective-C wrapper: %v", err)
+	}
+	return string(content), nil
 }
