@@ -1,0 +1,69 @@
+name: Build and Release
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24'
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          # Remove 'v' prefix from tag if present (v1.0.0 -> 1.0.0)
+          VERSION=${GITHUB_REF#refs/tags/}
+          VERSION=${VERSION#v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Building version: $VERSION"
+
+      - name: Modify Makefile to inject version
+        run: |
+          # Update the LDFLAGS in Makefile to inject version
+          sed -i 's/LDFLAGS=-ldflags "-s -w"/LDFLAGS=-ldflags "-s -w -X main.version=${{ steps.version.outputs.version }}"/' Makefile
+
+      - name: Build all platforms
+        run: make build-all
+
+      - name: Create archives
+        run: |
+          cd build
+          # Create tar.gz for Unix platforms
+          tar -czf sshlink-darwin-amd64.tar.gz sshlink-darwin-amd64
+          tar -czf sshlink-darwin-arm64.tar.gz sshlink-darwin-arm64
+          tar -czf sshlink-linux-amd64.tar.gz sshlink-linux-amd64
+          tar -czf sshlink-linux-arm64.tar.gz sshlink-linux-arm64
+          # Create zip for Windows
+          zip sshlink-windows-amd64.zip sshlink-windows-amd64.exe
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: sshlink-binaries
+          path: build/sshlink-*
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: artifacts
+
+      - name: Upload artifacts to existing release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: artifacts/sshlink-binaries/sshlink-*
+          tag_name: ${{ github.ref_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

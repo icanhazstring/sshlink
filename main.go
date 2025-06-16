@@ -17,7 +17,7 @@ import (
 //go:embed wrapper/sshlink_handler.m
 var objcWrapperFS embed.FS
 
-const version = "1.0.0"
+var version = "dev"
 
 var supportedTerminals = map[string][]string{
 	"terminal":  {"-e"},
