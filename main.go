@@ -8,8 +8,11 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"os/user"
+	"path/filepath"
 	"runtime"
 	"strings"
+	"text/template"
 
 	"github.com/icanhazstring/sshlink/terminals"
 )
@@ -19,15 +22,18 @@ var objcWrapperFS embed.FS
 
 var version = "dev"
 
-var supportedTerminals = map[string][]string{
-	"terminal":  {"-e"},
-	"iterm":     {},
-	"iterm2":    {},
-	"kitty":     {"-e"},
-	"alacritty": {"-e"},
-	"wezterm":   {"start"},
-	"warp":      {},
+var supportedDarwinTerminals = map[string][]string{
+	"terminal": {"-e"},
+	"iterm":    {},
+	"iterm2":   {},
+	"warp":     {},
 }
+
+var supportedLinuxTerminals = map[string][]string{
+	"gnome-terminal": {"--tab", "--", "/bin/bash", "-c"},
+}
+
+var supportedWindowsTerminals = map[string][]string{}
 
 func main() {
 	// Set up logging to a file for debugging
@@ -56,8 +62,19 @@ func main() {
 
 	if *list {
 		fmt.Println("Supported terminals:")
-		for term := range supportedTerminals {
-			fmt.Printf("  - %s\n", term)
+		switch runtime.GOOS {
+		case "darwin":
+			for term := range supportedDarwinTerminals {
+				fmt.Printf("  - %s\n", term)
+			}
+		case "linux":
+			for term := range supportedLinuxTerminals {
+				fmt.Printf("  - %s\n", term)
+			}
+		case "windows":
+			for term := range supportedWindowsTerminals {
+				fmt.Printf("  - %s\n", term)
+			}
 		}
 		return
 	}
@@ -371,10 +388,78 @@ func installHandlerMacOS(terminalName string) error {
 }
 
 func installHandlerLinux(terminalName string) error {
-	fmt.Println("ℹ️  Linux installation requires creating .desktop files.")
-	fmt.Println("   This minimal version shows the concept.")
-	fmt.Printf("   Would install handler for: %s\n", terminalName)
+	usr, err := user.Current()
+	if err != nil {
+		return err
+	}
+
+	// Get the absolute path to the current executable
+	execPath, err := os.Executable()
+	if err != nil {
+		return err
+	}
+
+	// Create directories if they don't exist
+	appDir := filepath.Join(usr.HomeDir, ".local", "share", "applications")
+	if err := os.MkdirAll(appDir, 0755); err != nil {
+		return err
+	}
+
+	// Create the desktop file
+	desktopFile := filepath.Join(appDir, "sshlink.desktop")
+	if err := createDesktopFile(desktopFile, execPath, terminalName); err != nil {
+		return err
+	}
+
+	// Register the protocol handler
+	return registerProtocolHandler()
+}
+
+func registerProtocolHandler() error {
+	// Update desktop database
+	updateDatabaseCommand := exec.Command("update-desktop-database", filepath.Join(os.Getenv("HOME"), ".local", "share", "applications"))
+	if err := updateDatabaseCommand.Run(); err != nil {
+		fmt.Println("Warning: Could not update desktop database")
+	}
+
+	// Register with xdg-mime
+	registerCommand := exec.Command("xdg-mime", "default", "sshlink.desktop", "x-scheme-handler/sshlink")
+	if err := registerCommand.Run(); err != nil {
+		return err
+	}
+
 	return nil
+}
+
+func createDesktopFile(filePath, execPath, terminalName string) error {
+	desktopTemplate := `[Desktop Entry]
+Type=Application
+Name=SSH Link Handler
+Exec={{.ExecPath}} -terminal={{.Terminal}} %u
+Icon=utilities-terminal
+StartupNotify=false
+NoDisplay=true
+MimeType=x-scheme-handler/sshlink;
+`
+
+	tmpl, err := template.New("desktop").Parse(desktopTemplate)
+	if err != nil {
+		return err
+	}
+
+	file, err := os.Create(filePath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	return tmpl.Execute(file, struct {
+		ExecPath string
+		Terminal string
+	}{
+		ExecPath: execPath,
+		Terminal: terminalName,
+	})
 }
 
 func installHandlerWindows(terminalName string) error {

@@ -50,14 +50,8 @@ func createMacOSTerminal(terminalType string) (Terminal, error) {
 
 func createLinuxTerminal(terminalType string) (Terminal, error) {
 	switch strings.ToLower(terminalType) {
-	case "kitty":
-		return NewGenericTerminal("kitty", []string{"-e"}), nil
-	case "alacritty":
-		return NewGenericTerminal("alacritty", []string{"-e"}), nil
-	case "wezterm":
-		return NewGenericTerminal("wezterm", []string{"start"}), nil
-	case "terminal":
-		return NewGenericTerminal("gnome-terminal", []string{"--"}), nil
+	case "gnome-terminal":
+		return NewGenericTerminal("gnome-terminal", []string{"--tab", "--", "/bin/bash", "-c"}), nil
 	default:
 		return nil, fmt.Errorf("unsupported terminal: %s", terminalType)
 	}

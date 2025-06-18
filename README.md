@@ -9,7 +9,7 @@
   [![Cross-Platform](https://img.shields.io/badge/Cross--Platform-4CAF50?style=for-the-badge)](https://github.com/icanhazstring/sshlink)
   [![MIT License](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
   
-  [Installation](#-installation) • [Usage](#-usage) • [Configuration](#-configuration) • [Contributing](#-contributing)
+  [Installation](#-installation) • [Usage](#-usage) • [Contributing](#-contributing)
 </div>
 
 ---
@@ -42,9 +42,8 @@ IP: 192.168.1.100
 ## 🚀 Features
 
 - **🌍 Cross-Platform** - Works on macOS, (Linux, and Windows - coming soon)
-- **🔧 Multiple Terminals** - Supports Terminal, iTerm, Kitty, Alacritty, WezTerm
+- **🔧 Multiple Terminals** - Supports Terminal, iTerm(2), warp, gnome-terminal (more to come)
 - **⚡ Zero Configuration** - Works out of the box
-- **🎨 Customizable** - JSON config for advanced setups
 - **📦 Single Binary** - No dependencies, just download and run
 - **🔗 Standard Protocol** - Uses `sshlink://` URL scheme
 
@@ -55,17 +54,21 @@ IP: 192.168.1.100
 Download the latest binary for your platform from [Releases](https://github.com/icanhazstring/sshlink/releases):
 
 ```bash
-# macOS (Intel)
+# macOS (AMD)
 curl -L https://github.com/icanhazstring/sshlink/releases/latest/download/sshlink-darwin-amd64.tar.gz | tar -xz
 chmod +x sshlink-darwin-amd64
 
-# macOS (Apple Silicon)
+# macOS (ARM)
 curl -L https://github.com/icanhazstring/sshlink/releases/latest/download/sshlink-darwin-arm64.tar.gz | tar -xz
 chmod +x sshlink-darwin-arm64
 
-# Linux (coming soon)
+# Linux (AMD)
 curl -L https://github.com/icanhazstring/sshlink/releases/latest/download/sshlink-linux-amd64.tar.gz | tar -xz
 chmod +x sshlink-linux-amd64
+
+# Linux (ARM)
+curl -L https://github.com/icanhazstring/sshlink/releases/latest/download/sshlink-linux-arm64.tar.gz | tar -xz
+chmod +x sshlink-linux-arm64
 
 # Windows (coming soon)
 # Download sshlink-windows-amd64.exe from releases
@@ -77,7 +80,7 @@ chmod +x sshlink-linux-amd64
 # Default terminal
 ./sshlink -install
 
-# Specific terminal (iTerm, Kitty, Alacritty, etc.)
+# Specific terminal (Terminal, iTerm, Warp, etc.)
 ./sshlink -install -terminal=iterm
 
 # List supported terminals
@@ -123,43 +126,6 @@ servers.forEach(server => {
       <td>${server.status}</td>
     </tr>`;
 });
-```
-
-### Advanced Configuration
-
-Create a custom `config.json` for specialized setups:
-
-```json
-{
-  "terminal": "wezterm",
-  "args": ["start", "--always-new-process"]
-}
-```
-
-```bash
-./sshlink -install -config=./config.json
-```
-
-## 🔧 Configuration
-
-### Supported Terminals
-
-| Terminal | macOS | Linux | Windows | Notes |
-|----------|-------|-------|---------|-------|
-| Terminal | ✅ | ❌ | ❌ | macOS default |
-| iTerm | ✅ | ❌ | ❌ | AppleScript integration |
-| Kitty | ✅ | ✅ | ✅ | Cross-platform |
-| Alacritty | ✅ | ✅ | ✅ | Rust-based |
-| WezTerm | ✅ | ✅ | ✅ | GPU-accelerated |
-| Windows Terminal | ❌ | ❌ | ✅ | Windows 10+ |
-
-### Custom Terminal Configuration
-
-```json
-{
-  "terminal": "your-terminal",
-  "args": ["-e", "zsh", "-c"]
-}
 ```
 
 ## 🎨 Examples
