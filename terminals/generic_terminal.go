@@ -17,7 +17,9 @@ func NewGenericTerminal(name string, args []string) Terminal {
 }
 
 func (t *GenericTerminal) Open(host string) error {
-	args := append(t.args, "ssh", host+";exec /bin/bash")
+	var args []string
+	args = append(t.args, "ssh", host)
+
 	cmd := exec.Command(t.Name_, args...)
 	return cmd.Start()
 }

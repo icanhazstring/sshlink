@@ -30,7 +30,7 @@ var supportedDarwinTerminals = map[string][]string{
 }
 
 var supportedLinuxTerminals = map[string][]string{
-	"gnome-terminal": {"--tab", "--", "/bin/bash", "-c"},
+	"gnome-terminal": {"--tab", "--"},
 }
 
 var supportedWindowsTerminals = map[string][]string{}
@@ -154,25 +154,78 @@ func main() {
 }
 
 func readTerminalPreference() string {
-	if runtime.GOOS != "darwin" {
+	switch runtime.GOOS {
+	case "darwin":
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			return ""
+		}
+
+		prefsPath := fmt.Sprintf("%s/Library/Preferences/com.icanhazstring.sshlink.plist", homeDir)
+
+		// Use defaults command to read preference
+		cmd := exec.Command("defaults", "read", prefsPath, "defaultTerminal")
+		output, err := cmd.Output()
+		if err != nil {
+			return ""
+		}
+
+		return strings.TrimSpace(string(output))
+
+	case "linux":
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			return ""
+		}
+
+		prefsFile := filepath.Join(homeDir, ".config", "sshlink", "config")
+		content, err := os.ReadFile(prefsFile)
+		if err != nil {
+			return ""
+		}
+
+		// Parse simple key=value format
+		lines := strings.Split(string(content), "\n")
+		for _, line := range lines {
+			line = strings.TrimSpace(line)
+			if strings.HasPrefix(line, "terminal=") {
+				return strings.TrimPrefix(line, "terminal=")
+			}
+		}
+
+	default:
 		return ""
+	}
+
+	return ""
+}
+
+func readShellPreference() string {
+	if runtime.GOOS != "linux" {
+		return "/bin/bash" // fallback for non-Linux
 	}
 
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		return ""
+		return "/bin/bash"
 	}
 
-	prefsPath := fmt.Sprintf("%s/Library/Preferences/com.icanhazstring.sshlink.plist", homeDir)
-
-	// Use defaults command to read preference
-	cmd := exec.Command("defaults", "read", prefsPath, "defaultTerminal")
-	output, err := cmd.Output()
+	prefsFile := filepath.Join(homeDir, ".config", "sshlink", "config")
+	content, err := os.ReadFile(prefsFile)
 	if err != nil {
-		return ""
+		return detectUserShell() // fallback to detection
 	}
 
-	return strings.TrimSpace(string(output))
+	// Parse simple key=value format
+	lines := strings.Split(string(content), "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "shell=") {
+			return strings.TrimPrefix(line, "shell=")
+		}
+	}
+
+	return detectUserShell() // fallback to detection
 }
 
 func handleURL(urlString, terminalType string) error {
@@ -196,6 +249,13 @@ func handleURL(urlString, terminalType string) error {
 }
 
 func executeSSH(host, terminalType string) error {
+	// For Linux, set the user shell in the factory before creating terminal
+	if runtime.GOOS == "linux" {
+		userShell := readShellPreference()
+		terminals.SetUserShell(userShell)
+		log.Printf("DEBUG: Set user shell to: %s", userShell)
+	}
+
 	terminal, err := terminals.CreateTerminal(terminalType)
 	if err != nil {
 		return err
@@ -207,6 +267,13 @@ func executeSSH(host, terminalType string) error {
 
 func installHandler(terminalType string) error {
 	fmt.Printf("Installing sshlink handler for %s on %s...\n", terminalType, runtime.GOOS)
+
+	// For Linux, set the user shell in the factory before creating terminal
+	if runtime.GOOS == "linux" {
+		userShell := readShellPreference()
+		terminals.SetUserShell(userShell)
+		log.Printf("DEBUG: Set user shell to: %s", userShell)
+	}
 
 	// Validate terminal type by trying to create it
 	terminal, err := terminals.CreateTerminal(terminalType)
@@ -390,42 +457,109 @@ func installHandlerMacOS(terminalName string) error {
 func installHandlerLinux(terminalName string) error {
 	usr, err := user.Current()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get current user: %v", err)
 	}
 
 	// Get the absolute path to the current executable
 	execPath, err := os.Executable()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get executable path: %v", err)
 	}
+
+	// Detect user's shell
+	userShell := detectUserShell()
+	fmt.Printf("🐚 Detected shell: %s\n", userShell)
 
 	// Create directories if they don't exist
 	appDir := filepath.Join(usr.HomeDir, ".local", "share", "applications")
 	if err := os.MkdirAll(appDir, 0755); err != nil {
-		return err
+		return fmt.Errorf("failed to create applications directory: %v", err)
 	}
+
+	fmt.Printf("📦 Installing sshlink handler for Linux...\n")
+	fmt.Printf("   Terminal: %s\n", terminalName)
+	fmt.Printf("   Executable: %s\n", execPath)
 
 	// Create the desktop file
 	desktopFile := filepath.Join(appDir, "sshlink.desktop")
 	if err := createDesktopFile(desktopFile, execPath, terminalName); err != nil {
-		return err
+		return fmt.Errorf("failed to create desktop file: %v", err)
 	}
 
+	fmt.Printf("📄 Created desktop file: %s\n", desktopFile)
+
+	// Save terminal preference and shell
+	prefsDir := filepath.Join(usr.HomeDir, ".config", "sshlink")
+	if err := os.MkdirAll(prefsDir, 0755); err != nil {
+		return fmt.Errorf("failed to create config directory: %v", err)
+	}
+
+	prefsFile := filepath.Join(prefsDir, "config")
+	prefsContent := fmt.Sprintf("terminal=%s\nshell=%s\n", terminalName, userShell)
+	if err := os.WriteFile(prefsFile, []byte(prefsContent), 0644); err != nil {
+		return fmt.Errorf("failed to save terminal preference: %v", err)
+	}
+
+	fmt.Printf("⚙️  Saved preferences: %s\n", prefsFile)
+	fmt.Printf("   Terminal: %s\n", terminalName)
+	fmt.Printf("   Shell: %s\n", userShell)
+
 	// Register the protocol handler
-	return registerProtocolHandler()
+	if err := registerProtocolHandler(); err != nil {
+		return fmt.Errorf("failed to register protocol handler: %v", err)
+	}
+
+	fmt.Printf("✅ SSHLink installed successfully for Linux!\n")
+	fmt.Printf("   Desktop file: %s\n", desktopFile)
+	fmt.Printf("   Default terminal: %s\n", terminalName)
+	fmt.Printf("   Default shell: %s\n", userShell)
+	fmt.Printf("   Config: %s\n", prefsFile)
+	fmt.Printf("   You can now use sshlink:// URLs in your browser\n")
+	fmt.Printf("   Debug logs: ~/sshlink-debug.log\n")
+	fmt.Printf("\n🧪 Test installation:\n")
+	fmt.Printf("   Manual test: %s sshlink://test@example.com\n", execPath)
+	fmt.Printf("   Browser test: Click any sshlink:// URL\n")
+
+	return nil
 }
 
 func registerProtocolHandler() error {
-	// Update desktop database
-	updateDatabaseCommand := exec.Command("update-desktop-database", filepath.Join(os.Getenv("HOME"), ".local", "share", "applications"))
-	if err := updateDatabaseCommand.Run(); err != nil {
-		fmt.Println("Warning: Could not update desktop database")
+	homeDir := os.Getenv("HOME")
+	if homeDir == "" {
+		usr, err := user.Current()
+		if err != nil {
+			return fmt.Errorf("failed to get home directory: %v", err)
+		}
+		homeDir = usr.HomeDir
 	}
 
+	appDir := filepath.Join(homeDir, ".local", "share", "applications")
+
+	fmt.Println("🔄 Updating desktop database...")
+	// Update desktop database
+	updateDatabaseCommand := exec.Command("update-desktop-database", appDir)
+	if err := updateDatabaseCommand.Run(); err != nil {
+		fmt.Printf("⚠️  Warning: Could not update desktop database: %v\n", err)
+		// Don't return error as this is not critical
+	}
+
+	fmt.Println("🔗 Registering protocol handler...")
 	// Register with xdg-mime
 	registerCommand := exec.Command("xdg-mime", "default", "sshlink.desktop", "x-scheme-handler/sshlink")
 	if err := registerCommand.Run(); err != nil {
-		return err
+		return fmt.Errorf("failed to register with xdg-mime: %v (make sure xdg-utils is installed)", err)
+	}
+
+	// Verify registration
+	fmt.Println("✓ Verifying protocol registration...")
+	verifyCommand := exec.Command("xdg-mime", "query", "default", "x-scheme-handler/sshlink")
+	if output, err := verifyCommand.Output(); err == nil {
+		result := strings.TrimSpace(string(output))
+		if result == "sshlink.desktop" {
+			fmt.Println("✓ Protocol handler registered successfully")
+		} else {
+			fmt.Printf("⚠️  Warning: Expected 'sshlink.desktop', got '%s'\n", result)
+		}
 	}
 
 	return nil
@@ -435,31 +569,43 @@ func createDesktopFile(filePath, execPath, terminalName string) error {
 	desktopTemplate := `[Desktop Entry]
 Type=Application
 Name=SSH Link Handler
+Comment=Handle sshlink:// URLs
 Exec={{.ExecPath}} -terminal={{.Terminal}} %u
 Icon=utilities-terminal
 StartupNotify=false
 NoDisplay=true
 MimeType=x-scheme-handler/sshlink;
+Categories=Network;
+Terminal=false
 `
 
 	tmpl, err := template.New("desktop").Parse(desktopTemplate)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to parse desktop template: %v", err)
 	}
 
 	file, err := os.Create(filePath)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create desktop file: %v", err)
 	}
 	defer file.Close()
 
-	return tmpl.Execute(file, struct {
+	if err := tmpl.Execute(file, struct {
 		ExecPath string
 		Terminal string
 	}{
 		ExecPath: execPath,
 		Terminal: terminalName,
-	})
+	}); err != nil {
+		return fmt.Errorf("failed to write desktop file: %v", err)
+	}
+
+	// Make the desktop file executable
+	if err := os.Chmod(filePath, 0755); err != nil {
+		return fmt.Errorf("failed to make desktop file executable: %v", err)
+	}
+
+	return nil
 }
 
 func installHandlerWindows(terminalName string) error {
@@ -493,14 +639,58 @@ func uninstallHandler() error {
 	case "darwin":
 		return uninstallHandlerMacOS()
 	case "linux":
-		fmt.Println("ℹ️  Linux uninstallation not implemented yet.")
-		return nil
+		return uninstallHandlerLinux()
 	case "windows":
 		fmt.Println("ℹ️  Windows uninstallation not implemented yet.")
 		return nil
 	default:
 		return fmt.Errorf("uninstallation not supported on %s", runtime.GOOS)
 	}
+}
+
+func uninstallHandlerLinux() error {
+	usr, err := user.Current()
+	if err != nil {
+		return fmt.Errorf("failed to get current user: %v", err)
+	}
+
+	fmt.Println("🗑️  Uninstalling sshlink handler for Linux...")
+
+	// Remove desktop file
+	desktopFile := filepath.Join(usr.HomeDir, ".local", "share", "applications", "sshlink.desktop")
+	if _, err := os.Stat(desktopFile); err == nil {
+		if err := os.Remove(desktopFile); err != nil {
+			return fmt.Errorf("failed to remove desktop file: %v", err)
+		}
+		fmt.Printf("🗑️  Removed desktop file: %s\n", desktopFile)
+	}
+
+	// Remove config directory
+	configDir := filepath.Join(usr.HomeDir, ".config", "sshlink")
+	if _, err := os.Stat(configDir); err == nil {
+		if err := os.RemoveAll(configDir); err != nil {
+			return fmt.Errorf("failed to remove config directory: %v", err)
+		}
+		fmt.Printf("🗑️  Removed config: %s\n", configDir)
+	}
+
+	// Update desktop database
+	appDir := filepath.Join(usr.HomeDir, ".local", "share", "applications")
+	fmt.Println("🔄 Updating desktop database...")
+	updateDatabaseCommand := exec.Command("update-desktop-database", appDir)
+	if err := updateDatabaseCommand.Run(); err != nil {
+		fmt.Printf("⚠️  Warning: Could not update desktop database: %v\n", err)
+	}
+
+	// Try to unregister the protocol handler
+	fmt.Println("🔗 Attempting to unregister protocol handler...")
+	// Note: There's no direct way to "unregister" with xdg-mime,
+	// but removing the desktop file and updating the database should be sufficient
+
+	fmt.Println("✅ SSHLink uninstalled successfully from Linux!")
+	fmt.Println("   Note: You may need to restart your browser for changes to take effect")
+
+	return nil
 }
 
 func uninstallHandlerMacOS() error {
@@ -546,4 +736,26 @@ func getObjectiveCWrapper() (string, error) {
 		return "", fmt.Errorf("failed to read embedded Objective-C wrapper: %v", err)
 	}
 	return string(content), nil
+}
+
+func detectUserShell() string {
+	// First, try to get shell from environment
+	if shell := os.Getenv("SHELL"); shell != "" {
+		return shell
+	}
+
+	// Fallback: try to get from /etc/passwd
+	if usr, err := user.Current(); err == nil {
+		cmd := exec.Command("getent", "passwd", usr.Username)
+		if output, err := cmd.Output(); err == nil {
+			// Parse /etc/passwd format: username:x:uid:gid:comment:home:shell
+			fields := strings.Split(strings.TrimSpace(string(output)), ":")
+			if len(fields) >= 7 && fields[6] != "" {
+				return fields[6]
+			}
+		}
+	}
+
+	// Final fallback
+	return "/bin/bash"
 }

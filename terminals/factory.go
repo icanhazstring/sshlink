@@ -9,6 +9,9 @@ import (
 // TestCreateTerminal allows tests to override terminal creation
 var TestCreateTerminal func(terminalType string) (Terminal, error)
 
+// Global variable to store shell preference (set by main package)
+var UserShell string = "/bin/bash"
+
 // CreateTerminal factory function
 func CreateTerminal(terminalType string) (Terminal, error) {
 	if TestCreateTerminal != nil {
@@ -37,12 +40,6 @@ func createMacOSTerminal(terminalType string) (Terminal, error) {
 		return NewITerm2(), nil
 	case "warp":
 		return NewWarp(), nil
-	case "kitty":
-		return NewGenericTerminal("kitty", []string{"-e"}), nil
-	case "alacritty":
-		return NewGenericTerminal("alacritty", []string{"-e"}), nil
-	case "wezterm":
-		return NewGenericTerminal("wezterm", []string{"start"}), nil
 	default:
 		return nil, fmt.Errorf("unsupported terminal: %s", terminalType)
 	}
@@ -51,7 +48,7 @@ func createMacOSTerminal(terminalType string) (Terminal, error) {
 func createLinuxTerminal(terminalType string) (Terminal, error) {
 	switch strings.ToLower(terminalType) {
 	case "gnome-terminal":
-		return NewGenericTerminal("gnome-terminal", []string{"--tab", "--", "/bin/bash", "-c"}), nil
+		return NewLinuxTerminal("gnome-terminal", UserShell), nil
 	default:
 		return nil, fmt.Errorf("unsupported terminal: %s", terminalType)
 	}
@@ -60,4 +57,9 @@ func createLinuxTerminal(terminalType string) (Terminal, error) {
 func createWindowsTerminal(terminalType string) (Terminal, error) {
 	// Basic Windows support
 	return NewGenericTerminal("cmd", []string{"/c", "start", "cmd", "/k"}), nil
+}
+
+// SetUserShell allows the main package to set the user's preferred shell
+func SetUserShell(shell string) {
+	UserShell = shell
 }
